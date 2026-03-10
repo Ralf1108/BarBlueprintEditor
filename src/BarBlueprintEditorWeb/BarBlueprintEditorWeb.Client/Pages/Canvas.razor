@@ -4,6 +4,8 @@
 @using SkiaSharp.Views.Blazor
 @using System.Collections.ObjectModel
 @using System.Diagnostics
+@using BarBlueprintEditor.Shared
+@using BarBlueprintEditor.Shared.Models
 
 @inject IJSRuntime Js
 @rendermode InteractiveWebAssembly
@@ -50,11 +52,36 @@
 
     private ObservableCollection<Entity> Entities = new();
     private Dictionary<string, SKBitmap> imageCache = new();
+    private List<UnitDefinition?> _unitDefinitions = new();
 
     private string messageLocation = "Click a tile...";
     private string messageTile = "Click a tile...";
 
-    [Inject] public HttpClient HttpClient { get; set; } // Injected HttpClient
+    [Inject] public HttpClient Client { get; set; } // Injected HttpClient
+
+    protected override async Task OnInitializedAsync()
+    {
+        var bytes = await Client.GetByteArrayAsync("resources/units.zip");
+        await using var zipStream = new MemoryStream(bytes);
+        _unitDefinitions = Tools.ExtractZipAsync(zipStream)
+            .ToBlockingEnumerable()
+            .Select(x =>
+            {
+                Debug.WriteLine(x.Filepath);
+                try
+                {
+                    var unitDefinition = Tools.ParseFromLuaDefinition(x.Stream);
+                    unitDefinition.Folder = x.Filepath;
+                    return unitDefinition;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Skipping {x.Filepath} because of lua parse error: " + ex.Message);
+                    return null;
+                }
+            })
+            .ToList();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -197,7 +224,7 @@
 
         try
         {
-            var response = await HttpClient.GetAsync(url);
+            var response = await Client.GetAsync(url);
             response.EnsureSuccessStatusCode();
             var stream = await response.Content.ReadAsStreamAsync();
             var bitmap = SKBitmap.Decode(stream);
