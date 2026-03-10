@@ -2,7 +2,7 @@
 
 public class Program
 {
-    public static int Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
         if (args.Length == 0)
         {
@@ -10,12 +10,6 @@ public class Program
             [
                 @"D:\Projects\BarBlueprintEditor\tmp\git\units",
                 @"D:\Projects\BarBlueprintEditor\tmp\converted"
-            ];
-
-            args =
-            [
-                @"git\units",
-                @"converted"
             ];
         }
 
@@ -25,17 +19,28 @@ public class Program
             return 1;
         }
 
+        Dictionary<string, ImageUrlExtractor.WebUnitDefinition> unitInfos;
+        try
+        {
+            unitInfos = (await ImageUrlExtractor.GetUnitDefinitions()).ToDictionary(x => x.Name);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching unit infos from BAR homepage: {ex.Message}");
+            return 2;
+        }
+
         var sourceFolder = args[0];
         var targetFolder = args[1];
         try
         {
-            Converter.Convert(sourceFolder, targetFolder);
+            Converter.Convert(sourceFolder, targetFolder, unitInfos);
             return 0;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error converting lua to json: {ex.Message}");
-            return 2;
+            return 3;
         }
     }
 }

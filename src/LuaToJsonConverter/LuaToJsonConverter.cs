@@ -1,11 +1,16 @@
-using System.Text;
 using NLua;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace LuaToJsonConverter;
 
 public static class Converter
 {
-    public static void Convert(string sourceFolder, string targetFolder)
+    public static void Convert(
+        string sourceFolder,
+        string targetFolder,
+        Dictionary<string, ImageUrlExtractor.WebUnitDefinition> units)
     {
         var fullSourceFolderPath = Path.GetFullPath(sourceFolder);
         var fullTargetFolderPath = Path.GetFullPath(targetFolder);
@@ -24,11 +29,23 @@ public static class Converter
                 throw new InvalidOperationException($"Error converting file '{fullFilePath}' to json: " + ex.Message, ex);
             }
 
+            // add webInfo
+            var jsonObject = JsonNode.Parse(json)!.AsObject();
+            var unitName = jsonObject[0].GetPropertyName(); // first object is name of unit
+            if (!units.TryGetValue(unitName, out var unitInfo))
+            {
+                Console.WriteLine($"Warning: Couldn't find unit info for '{unitName}' - skipping...");
+                continue;
+            }
+            
+            jsonObject[unitName]["unitInfo"] = JsonSerializer.SerializeToNode(unitInfo);
+            var updatedJson = jsonObject.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+            
             var subPath = Path.GetDirectoryName(fullFilePath)!.Replace(fullSourceFolderPath, "").Trim("\\").ToString();
             var targetFile = Path.ChangeExtension(Path.GetFileName(fullFilePath), ".json");
             var targetFilePath = Path.Combine(fullTargetFolderPath, subPath, targetFile);
             Directory.CreateDirectory(Path.GetDirectoryName(targetFilePath)!);
-            File.WriteAllText(targetFilePath, json);
+            File.WriteAllText(targetFilePath, updatedJson);
         }
     }
 
