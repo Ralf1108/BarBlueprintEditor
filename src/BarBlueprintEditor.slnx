@@ -1,3 +1,5 @@
 <Solution>
   <Project Path="BarBlueprintEditor/BarBlueprintEditor.csproj" />
+  <Project Path="BarBlueprintEditorWeb/BarBlueprintEditorWeb.Client/BarBlueprintEditorWeb.Client.csproj" Id="d3da2658-cc7b-4085-a13f-a232f554449f" />
+  <Project Path="BarBlueprintEditorWeb/BarBlueprintEditorWeb/BarBlueprintEditorWeb.csproj" Id="ba75edf1-2c93-4c9d-a6d1-b9abc8e42081" />
 </Solution>

@@ -1,0 +1,224 @@
+﻿@page "/canvas"
+
+@using SkiaSharp
+@using SkiaSharp.Views.Blazor
+@using System.Collections.ObjectModel
+@using System.Diagnostics
+
+@inject IJSRuntime Js
+@rendermode InteractiveWebAssembly
+
+<h1>Adaptive Tile Grid Canvas</h1>
+
+<div class="full-page-container">
+
+    <!-- Left sidebar / controls -->
+    <aside class="sidebar">
+        <h2>Controls</h2>
+        <button @onclick="AddEntity">Add Random Entity</button>
+        <button @onclick="RemoveLastEntity">Remove Last</button>
+        <p>Grid: @GridWidthInTiles × @GridHeightInTiles</p>
+        <p>Canvas: @CanvasLogicalWidth × @CanvasLogicalHeight px</p>
+        <p>Location: @messageLocation</p>
+        <p>Tile: @messageTile</p>
+    </aside>
+
+    <!-- Right side: canvas area -->
+    <main class="canvas-area">
+        <SKCanvasView @ref="canvasView"
+                      OnPaintSurface="OnPaintSurface"
+                      @onmousedown="HandleMouseDown"
+                      Width="@CanvasLogicalWidth"
+                      Height="@CanvasLogicalHeight"
+                      IgnorePixelScaling="false"
+                      class="canvas-view"/>
+    </main>
+</div>
+
+@code {
+    private SKCanvasView? canvasView;
+
+    private int GridWidthInTiles { get; set; } = 20;
+    private int GridHeightInTiles { get; set; } = 20;
+    private int CanvasLogicalWidth => GridWidthInTiles * TileSize;
+    private int CanvasLogicalHeight => GridHeightInTiles * TileSize;
+
+    private const int TileSize = 32;
+    private const int MinTiles = 8; // don't go too small
+    private const int ReservedVerticalPx = 180; // space for header + buttons + margins
+    private const int ReservedHorizontalPx = 40;
+
+    private ObservableCollection<Entity> Entities = new();
+    private Dictionary<string, SKBitmap> imageCache = new();
+
+    private string messageLocation = "Click a tile...";
+    private string messageTile = "Click a tile...";
+
+    [Inject] public HttpClient HttpClient { get; set; } // Injected HttpClient
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Register resize listener
+            var dotNetRef = DotNetObjectReference.Create(this);
+            await Js.InvokeVoidAsync("browserResize.registerResizeCallback", dotNetRef);
+
+            // Initial size
+            await UpdateCanvasSizeFromViewport();
+            await LoadSampleEntities(); // your existing sample load
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnBrowserResize()
+    {
+        await UpdateCanvasSizeFromViewport();
+        await InvokeAsync(StateHasChanged); // ensure re-render
+    }
+
+    private async Task UpdateCanvasSizeFromViewport()
+    {
+        var dims = await Js.InvokeAsync<BrowserDimensions>("browserResize.getDimensions");
+
+        // Reserve space for sidebar + some padding
+        var availableWidth = dims.Width - ReservedHorizontalPx - 20; // padding
+        var availableHeight = dims.Height - ReservedVerticalPx;
+
+        GridWidthInTiles = Math.Max(MinTiles, availableWidth / TileSize);
+        GridHeightInTiles = Math.Max(MinTiles, availableHeight / TileSize);
+
+        // Optional: keep square aspect if desired
+        GridHeightInTiles = GridWidthInTiles;
+
+        canvasView?.Invalidate();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnPaintSurface(SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.White);
+
+        // Grid lines (drawn in logical coordinates – SkiaSharp scales automatically)
+        using var gridPaint = new SKPaint { Color = new SKColor(220, 220, 220), Style = SKPaintStyle.Stroke, StrokeWidth = 1 };
+        for (var i = 0; i <= GridWidthInTiles; i++)
+            canvas.DrawLine(i * TileSize, 0, i * TileSize, CanvasLogicalHeight, gridPaint);
+
+        for (var j = 0; j <= GridHeightInTiles; j++)
+            canvas.DrawLine(0, j * TileSize, CanvasLogicalWidth, j * TileSize, gridPaint);
+
+        // Draw entities (same as before)
+        foreach (var entity in Entities)
+        {
+            float x = entity.X * TileSize;
+            float y = entity.Y * TileSize;
+
+            if (imageCache.TryGetValue(entity.ImageUrl, out var bmp))
+            {
+                canvas.DrawBitmap(bmp, x, y);
+            }
+            else
+            {
+                using var p = new SKPaint { Color = SKColors.IndianRed, Style = SKPaintStyle.Fill };
+                canvas.DrawRect(x, y, TileSize, TileSize, p);
+            }
+        }
+    }
+
+    private async Task LoadSampleEntities()
+    {
+        // Sample entities with public 32x32 images (lorem picsum)
+        await AddEntityAsync(new Entity { ImageUrl = "https://picsum.photos/32/32?random=1", X = 2, Y = 3 });
+        await AddEntityAsync(new Entity { ImageUrl = "https://picsum.photos/32/32?random=2", X = 5, Y = 7 });
+        await AddEntityAsync(new Entity { ImageUrl = "https://picsum.photos/32/32?random=3", X = 10, Y = 10 });
+
+        Entities.CollectionChanged += (_, _) => canvasView?.Invalidate();
+    }
+
+    private void HandleMouseDown(MouseEventArgs e)
+    {
+        // canvasView.Dpi is usually window.devicePixelRatio (1, 1.25, 1.5, 2, 2.5, 3 ...)
+        var scale = canvasView?.Dpi ?? 1.0;
+
+        var x = e.OffsetX * scale;
+        var y = e.OffsetY * scale;
+
+        var tileX = (int)(x / TileSize);
+        var tileY = (int)(y / TileSize);
+
+        if (tileX >= 0 && tileX < GridWidthInTiles
+                       && tileY >= 0 && tileY < GridHeightInTiles)
+        {
+            messageLocation = $"{e.OffsetX} x {e.OffsetY}";
+            messageTile = $"{tileX} x {tileY}";
+        }
+        else
+        {
+            messageLocation = "Outside grid";
+            messageTile = "";
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task AddEntity()
+    {
+        var rnd = new Random();
+        var ent = new Entity
+        {
+            ImageUrl = $"https://picsum.photos/32/32?random={rnd.Next(1000)}",
+            X = rnd.Next(GridWidthInTiles),
+            Y = rnd.Next(GridHeightInTiles)
+        };
+
+        await AddEntityAsync(ent);
+    }
+
+    private async Task AddEntityAsync(Entity entity)
+    {
+        Entities.Add(entity);
+        await LoadImageAsync(entity.ImageUrl);
+        canvasView?.Invalidate();
+    }
+
+    private void RemoveLastEntity()
+    {
+        if (Entities.Count > 0)
+        {
+            Entities.RemoveAt(Entities.Count - 1);
+        }
+    }
+
+    private async Task LoadImageAsync(string url)
+    {
+        if (string.IsNullOrEmpty(url) || imageCache.ContainsKey(url))
+            return;
+
+        try
+        {
+            var response = await HttpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var stream = await response.Content.ReadAsStreamAsync();
+            var bitmap = SKBitmap.Decode(stream);
+            imageCache[url] = bitmap;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to load image {url}: {ex.Message}");
+        }
+    }
+
+    public class Entity
+    {
+        public string ImageUrl { get; set; } = string.Empty;
+        public int X { get; set; } // Tile index (0-based)
+        public int Y { get; set; } // Tile index (0-based)
+    }
+
+    public class BrowserDimensions
+    {
+        public int Width { get; set; }
+        public int Height { get; set; }
+    }
+}
