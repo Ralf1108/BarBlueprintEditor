@@ -1,5 +1,5 @@
 # BarBlueprintEditor
-Blueprint Editor for BAR (Beyond-all-Reasons)
+Blueprint Editor for BAR (Beyond-all-Reason)
 
 
 # Remarks
