@@ -1,0 +1,17 @@
+.tile-map-viewer {
+    width: 512px;
+    height: 512px;
+    border: 1px solid #ccc;
+    position: relative;
+    overflow: hidden;
+    cursor: grab;
+    background-color: #f0f0f0;
+}
+
+.tile-map-viewer:active {
+    cursor: grabbing;
+}
+
+.tile-map-viewer img {
+    display: block;
+}

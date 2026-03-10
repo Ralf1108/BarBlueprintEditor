@@ -1,4 +1,3 @@
-using BarBlueprintEditorWeb.Client.Pages;
 using BarBlueprintEditorWeb.Components;
 
 namespace BarBlueprintEditorWeb

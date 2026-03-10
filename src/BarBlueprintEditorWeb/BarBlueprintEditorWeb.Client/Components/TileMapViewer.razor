@@ -1,0 +1,129 @@
+﻿@namespace BarBlueprintEditorWeb.Client.Components
+
+<div class="tile-map-viewer"
+     @ref="ViewerDiv"
+     @onwheel="OnWheel"
+     @onmousedown="StartPan"
+     @onmouseup="EndPan"
+     @onmousemove="OnPan">
+    @foreach (var tile in VisibleTiles)
+    {
+        <img src="@tile.Url"
+             style="position:absolute; left:@tile.Xpx; top:@tile.Ypx; width:@tile.WidthPx; height:@tile.HeightPx;"
+             loading="lazy" />
+    }
+</div>
+
+@code {
+    [Parameter] public int TileSize { get; set; } = 128;
+    [Parameter] public Func<int, int, int, string> TileUrlFunc { get; set; } = (_, _, _) => "";
+
+    private ElementReference ViewerDiv;
+    private double ViewerWidth = 512;
+    private double ViewerHeight = 512;
+
+    private double OffsetX = 0;
+    private double OffsetY = 0;
+    private double Zoom = 1.0;
+
+    private bool IsPanning = false;
+    private double PanStartX, PanStartY;
+    private double OffsetStartX, OffsetStartY;
+
+    class Tile
+    {
+        public string Url { get; set; } = "";
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+
+        public string Xpx => $"{X}px";
+        public string Ypx => $"{Y}px";
+        public string WidthPx => $"{Width}px";
+        public string HeightPx => $"{Height}px";
+    }
+
+    private List<Tile> VisibleTiles => GetVisibleTiles();
+
+    private List<Tile> GetVisibleTiles()
+    {
+        var tiles = new List<Tile>();
+        var cols = (int)Math.Ceiling(ViewerWidth / (TileSize * Zoom)) + 2;
+        var rows = (int)Math.Ceiling(ViewerHeight / (TileSize * Zoom)) + 2;
+
+        var startCol = (int)Math.Floor(-OffsetX / (TileSize * Zoom));
+        var startRow = (int)Math.Floor(-OffsetY / (TileSize * Zoom));
+
+        for (var x = startCol; x < startCol + cols; x++)
+        {
+            for (var y = startRow; y < startRow + rows; y++)
+            {
+                tiles.Add(new Tile
+                {
+                    X = (int)(x * TileSize * Zoom + OffsetX),
+                    Y = (int)(y * TileSize * Zoom + OffsetY),
+                    Width = (int)(TileSize * Zoom),
+                    Height = (int)(TileSize * Zoom),
+                    Url = TileUrlFunc(x, y, (int)Math.Round(Math.Log(Zoom, 2)))
+                });
+            }
+        }
+
+        return tiles;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var rect = await JS.InvokeAsync<BoundingClientRect>("getBoundingClientRect", ViewerDiv);
+            ViewerWidth = rect.width;
+            ViewerHeight = rect.height;
+            StateHasChanged();
+        }
+    }
+
+    [Inject] private IJSRuntime JS { get; set; }
+
+    private void OnWheel(WheelEventArgs e)
+    {
+        var oldZoom = Zoom;
+        Zoom *= e.DeltaY < 0 ? 1.1 : 0.9;
+        Zoom = Math.Clamp(Zoom, 0.5, 8.0);
+
+        var mouseX = e.ClientX;
+        var mouseY = e.ClientY;
+
+        OffsetX = mouseX - (mouseX - OffsetX) * (Zoom / oldZoom);
+        OffsetY = mouseY - (mouseY - OffsetY) * (Zoom / oldZoom);
+    }
+
+    private void StartPan(MouseEventArgs e)
+    {
+        IsPanning = true;
+        PanStartX = e.ClientX;
+        PanStartY = e.ClientY;
+        OffsetStartX = OffsetX;
+        OffsetStartY = OffsetY;
+    }
+
+    private void EndPan(MouseEventArgs e)
+    {
+        IsPanning = false;
+    }
+
+    private void OnPan(MouseEventArgs e)
+    {
+        if (!IsPanning)
+            return;
+        OffsetX = OffsetStartX + (e.ClientX - PanStartX);
+        OffsetY = OffsetStartY + (e.ClientY - PanStartY);
+    }
+
+    class BoundingClientRect
+    {
+        public double width { get; set; }
+        public double height { get; set; }
+    }
+}

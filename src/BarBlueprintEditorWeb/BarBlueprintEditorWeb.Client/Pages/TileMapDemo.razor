@@ -1,0 +1,14 @@
+﻿@page "/tile-map-demo"
+@using BarBlueprintEditorWeb.Client.Components
+
+<div style="width:600px; height:400px;">
+    <TileMapViewer TileSize="32" TileUrlFunc="@GetTileUrl" />
+</div>
+
+@code {
+    private string GetTileUrl(int x, int y, int zoom)
+    {
+        return "https://cdn.prod.website-files.com/5c69241780da2a1dfc6caa4e/655cc7d0f32d12553843bf5f_20231121T0258-9f817473-03c0-43c3-ab45-297f86ad4419.avif";
+        // return $"https://placekitten.com/{128 + x}/{128 + y}";
+    }
+}
