@@ -1,17 +1,11 @@
 ﻿using System.Net;
+using BarBlueprintEditor.Shared.Dtos;
 using HtmlAgilityPack;
 
 namespace LuaToJsonConverter;
 
 public static class ImageUrlExtractor
 {
-    public record WebUnitDefinition(
-        string Name,
-        string ImageUrl,
-        string Title,
-        string Description,
-        string TechLevel);
-
     public static async Task<List<WebUnitDefinition>> GetUnitDefinitions()
     {
         var unitTypes = new List<string>

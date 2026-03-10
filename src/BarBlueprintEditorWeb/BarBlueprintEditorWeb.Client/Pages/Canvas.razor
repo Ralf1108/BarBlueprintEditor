@@ -10,6 +10,8 @@
 @inject IJSRuntime Js
 @rendermode InteractiveWebAssembly
 
+<img src="https://cdn.prod.website-files.com/5c69241780da2a1dfc6caa4e/655cc7d0f32d12553843bf5f_20231121T0258-9f817473-03c0-43c3-ab45-297f86ad4419.avif" />
+
 <h1>Adaptive Tile Grid Canvas</h1>
 
 <div class="full-page-container">
@@ -33,7 +35,7 @@
                       Width="@CanvasLogicalWidth"
                       Height="@CanvasLogicalHeight"
                       IgnorePixelScaling="false"
-                      class="canvas-view"/>
+                      class="canvas-view" />
     </main>
 </div>
 
@@ -59,29 +61,31 @@
 
     [Inject] public HttpClient Client { get; set; } // Injected HttpClient
 
-    protected override async Task OnInitializedAsync()
-    {
-        var bytes = await Client.GetByteArrayAsync("resources/units.zip");
-        await using var zipStream = new MemoryStream(bytes);
-        _unitDefinitions = Tools.ExtractZipAsync(zipStream)
-            .ToBlockingEnumerable()
-            .Select(x =>
-            {
-                Debug.WriteLine(x.Filepath);
-                try
-                {
-                    var unitDefinition = Tools.ParseFromLuaDefinition(x.Stream);
-                    unitDefinition.Folder = x.Filepath;
-                    return unitDefinition;
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Skipping {x.Filepath} because of lua parse error: " + ex.Message);
-                    return null;
-                }
-            })
-            .ToList();
-    }
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     var bytes = await Client.GetByteArrayAsync("resources/units.zip");
+    //     await using var zipStream = new MemoryStream(bytes);
+    //     _unitDefinitions = Tools.ExtractZipAsync(zipStream)
+    //         .ToBlockingEnumerable()
+    //         .Select(x =>
+    //         {
+    //             Debug.WriteLine(x.Filepath);
+    //             try
+    //             {
+    //                 var unitDefinition = Tools.ParseUnitDefinitionFromJson(x.Stream);
+    //                 unitDefinition.Folder = x.Filepath;
+    //                 return unitDefinition;
+    //             }
+    //             catch (Exception ex)
+    //             {
+    //                 Debug.WriteLine($"Skipping {x.Filepath} because of lua parse error: " + ex.Message);
+    //                 return null;
+    //             }
+    //         })
+    //         .ToList();
+
+    //     await LoadSampleEntities();
+    // }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -93,7 +97,6 @@
 
             // Initial size
             await UpdateCanvasSizeFromViewport();
-            await LoadSampleEntities(); // your existing sample load
         }
     }
 
@@ -155,12 +158,21 @@
 
     private async Task LoadSampleEntities()
     {
-        // Sample entities with public 32x32 images (lorem picsum)
-        await AddEntityAsync(new Entity { ImageUrl = "https://picsum.photos/32/32?random=1", X = 2, Y = 3 });
-        await AddEntityAsync(new Entity { ImageUrl = "https://picsum.photos/32/32?random=2", X = 5, Y = 7 });
-        await AddEntityAsync(new Entity { ImageUrl = "https://picsum.photos/32/32?random=3", X = 10, Y = 10 });
+        for (var i = 0; i < 3; i++)
+            await AddRandomEntity();
 
         Entities.CollectionChanged += (_, _) => canvasView?.Invalidate();
+    }
+
+    private async Task AddRandomEntity()
+    {
+        var random = Random.Shared;
+        var index = random.Next(_unitDefinitions.Count);
+        var unitDefinition = _unitDefinitions[index];
+        var x = random.Next(GridWidthInTiles);
+        var y = random.Next(GridHeightInTiles);
+        // await AddEntityAsync(new Entity { ImageUrl = "https://picsum.photos/32/32?random=1", X = 2, Y = 3 });
+        await AddEntityAsync(new Entity { ImageUrl = unitDefinition.ImageUrl, X = x, Y = y });
     }
 
     private void HandleMouseDown(MouseEventArgs e)
@@ -191,15 +203,7 @@
 
     private async Task AddEntity()
     {
-        var rnd = new Random();
-        var ent = new Entity
-        {
-            ImageUrl = $"https://picsum.photos/32/32?random={rnd.Next(1000)}",
-            X = rnd.Next(GridWidthInTiles),
-            Y = rnd.Next(GridHeightInTiles)
-        };
-
-        await AddEntityAsync(ent);
+        await AddRandomEntity();
     }
 
     private async Task AddEntityAsync(Entity entity)
@@ -224,10 +228,33 @@
 
         try
         {
-            var response = await Client.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-            var stream = await response.Content.ReadAsStreamAsync();
-            var bitmap = SKBitmap.Decode(stream);
+            SKBitmap bitmap;
+            if(url.EndsWith(".avif", StringComparison.OrdinalIgnoreCase))
+            {
+                var result = await Js.InvokeAsync<JSImageData>("loadAvifAsImageData", url);
+                bitmap = new SKBitmap(result.width, result.height, SKColorType.Rgba8888, SKAlphaType.Premul);
+
+                for (var y = 0; y < result.height; y++)
+                {
+                    for (var x = 0; x < result.width; x++)
+                    {
+                        var idx = (y * result.width + x) * 4;
+                        var r = result.data[idx + 0];
+                        var g = result.data[idx + 1];
+                        var b = result.data[idx + 2];
+                        var a = result.data[idx + 3];
+                        bitmap.SetPixel(x, y, new SKColor(r, g, b, a));
+                    }
+                }
+            }
+            else
+            {
+                var response = await Client.GetAsync(url);
+                response.EnsureSuccessStatusCode();
+                var stream = await response.Content.ReadAsStreamAsync();
+                bitmap = SKBitmap.Decode(stream);
+            }
+
             imageCache[url] = bitmap;
         }
         catch (Exception ex)
@@ -247,5 +274,12 @@
     {
         public int Width { get; set; }
         public int Height { get; set; }
+    }
+
+    public class JSImageData
+    {
+        public int width { get; set; }
+        public int height { get; set; }
+        public byte[] data { get; set; }
     }
 }

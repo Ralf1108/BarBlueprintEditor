@@ -1,4 +1,6 @@
-﻿namespace LuaToJsonConverter;
+﻿using BarBlueprintEditor.Shared.Dtos;
+
+namespace LuaToJsonConverter;
 
 public class Program
 {
@@ -19,7 +21,7 @@ public class Program
             return 1;
         }
 
-        Dictionary<string, ImageUrlExtractor.WebUnitDefinition> unitInfos;
+        Dictionary<string, WebUnitDefinition> unitInfos;
         try
         {
             unitInfos = (await ImageUrlExtractor.GetUnitDefinitions()).ToDictionary(x => x.Name);

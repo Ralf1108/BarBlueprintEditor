@@ -14,16 +14,20 @@ public static class Tools
         return root!.Blueprints;
     }
 
-    public static UnitDefinition ParseFromLuaDefinition(Stream stream)
+    public static UnitDefinition ParseUnitDefinitionFromJson(Stream stream)
     {
-        var options = new JsonSerializerOptions { AllowTrailingCommas = true };
-        var root = JsonSerializer.Deserialize<Dictionary<string, LuaUnit>>(stream, options);
+        var root = JsonSerializer.Deserialize<Dictionary<string, LuaUnit>>(stream);
         var entry = root!.Single();
         return new UnitDefinition
         {
             Name = entry.Key,
             FootprintX = entry.Value.Footprintx,
             FootprintZ = entry.Value.Footprintz,
+
+            Title = entry.Value.UnitInfo.Title,
+            Description = entry.Value.UnitInfo.Description,
+            TechLevel = entry.Value.UnitInfo.TechLevel,
+            ImageUrl = entry.Value.UnitInfo.ImageUrl
         };
     }
 

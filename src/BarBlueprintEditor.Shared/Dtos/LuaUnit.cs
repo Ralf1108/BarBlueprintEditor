@@ -13,6 +13,9 @@ public class LuaRoot
 
 public class LuaUnit
 {
+    [JsonPropertyName("unitInfo")]
+    public WebUnitDefinition UnitInfo { get; set; }
+    
     [JsonPropertyName("airsightdistance")]
     public float Airsightdistance { get; set; }
 

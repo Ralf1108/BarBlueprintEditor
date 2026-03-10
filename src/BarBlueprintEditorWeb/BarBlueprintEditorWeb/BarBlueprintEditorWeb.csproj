@@ -8,10 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="wwwroot\js\avifHelper.js" />
     <Content Remove="wwwroot\js\resize.js" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="wwwroot\js\avifHelper.js" />
     <None Include="wwwroot\js\resize.js" />
   </ItemGroup>
 

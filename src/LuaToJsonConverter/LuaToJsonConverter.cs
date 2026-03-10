@@ -1,7 +1,8 @@
-using NLua;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using BarBlueprintEditor.Shared.Dtos;
+using NLua;
 
 namespace LuaToJsonConverter;
 
@@ -10,7 +11,7 @@ public static class Converter
     public static void Convert(
         string sourceFolder,
         string targetFolder,
-        Dictionary<string, ImageUrlExtractor.WebUnitDefinition> units)
+        Dictionary<string, WebUnitDefinition> units)
     {
         var fullSourceFolderPath = Path.GetFullPath(sourceFolder);
         var fullTargetFolderPath = Path.GetFullPath(targetFolder);
