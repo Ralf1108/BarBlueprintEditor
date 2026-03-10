@@ -1,5 +1,6 @@
 <Solution>
-  <Project Path="BarBlueprintEditor/BarBlueprintEditor.csproj" />
+  <Project Path="BarBlueprintEditor.Shared/BarBlueprintEditor.Shared.csproj" Id="5cb1a24f-29f0-4ddf-b211-0598c696dbe4" />
   <Project Path="BarBlueprintEditorWeb/BarBlueprintEditorWeb.Client/BarBlueprintEditorWeb.Client.csproj" Id="d3da2658-cc7b-4085-a13f-a232f554449f" />
   <Project Path="BarBlueprintEditorWeb/BarBlueprintEditorWeb/BarBlueprintEditorWeb.csproj" Id="ba75edf1-2c93-4c9d-a6d1-b9abc8e42081" />
+  <Project Path="LuaToJsonConverter/LuaToJsonConverter.csproj" Id="8dd83193-3d73-4ef2-b66d-f6670b94f740" />
 </Solution>
