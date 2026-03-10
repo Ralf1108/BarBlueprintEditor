@@ -29,3 +29,8 @@
     height: 100%;
     touch-action: none; /* helps with touch dragging if you add it later */
 }
+
+.tilemap-container {
+    width: 100%;
+    height: 100vh; /* full viewport height */
+}

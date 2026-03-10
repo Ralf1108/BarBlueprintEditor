@@ -1,6 +1,6 @@
 .tile-map-viewer {
-    width: 512px;
-    height: 512px;
+    width: 100%;
+    height: 100%;
     border: 1px solid #ccc;
     position: relative;
     overflow: hidden;
