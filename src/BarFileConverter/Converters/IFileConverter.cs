@@ -1,4 +1,4 @@
-namespace LuaToJsonConverter.Converters;
+namespace BarFileConverter.Converters;
 
 public interface IFileConverter
 {

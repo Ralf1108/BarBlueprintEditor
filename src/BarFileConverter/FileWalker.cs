@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
-using LuaToJsonConverter.Converters;
+using BarFileConverter.Converters;
 
-namespace LuaToJsonConverter;
+namespace BarFileConverter;
 
 public class FileWalker
 {

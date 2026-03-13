@@ -2,7 +2,7 @@
 using BarBlueprintEditor.Shared.Dtos;
 using HtmlAgilityPack;
 
-namespace LuaToJsonConverter;
+namespace BarFileConverter;
 
 public static class UnitInfosWebScraper
 {

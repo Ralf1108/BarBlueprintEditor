@@ -1,10 +1,9 @@
-using BarBlueprintEditor.Shared.Dtos;
-using NLua;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using NLua;
 
-namespace LuaToJsonConverter.Converters;
+namespace BarFileConverter.Converters;
 
 public class LuaToJsonConverter(Dictionary<string, WebUnitDefinition> unitInfos) : IFileConverter
 {

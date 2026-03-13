@@ -1,10 +1,9 @@
-using BarBlueprintEditor.Shared.Dtos;
 using BCnEncoder.Decoder;
 using BCnEncoder.ImageSharp;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 
-namespace LuaToJsonConverter.Converters;
+namespace BarFileConverter.Converters;
 
 public class DdsToImageConverter(Dictionary<string, WebUnitDefinition> unitInfos) : IFileConverter
 {

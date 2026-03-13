@@ -1,14 +1,14 @@
 ﻿using System.Text.RegularExpressions;
 using BarBlueprintEditor.Shared.Dtos;
-using LuaToJsonConverter.Converters;
+using BarFileConverter.Converters;
 
-namespace LuaToJsonConverter;
+namespace BarFileConverter;
 
 public class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        if (args.Length  == 0)
+        if (args.Length == 0)
         {
             args =
             [
@@ -50,7 +50,6 @@ public class Program
             switch (type)
             {
                 case "lua":
-                   
                     converter = new Converters.LuaToJsonConverter(unitInfos);
                     break;
                 case "dds":
