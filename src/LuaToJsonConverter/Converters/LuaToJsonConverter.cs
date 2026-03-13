@@ -1,53 +1,54 @@
+using BarBlueprintEditor.Shared.Dtos;
+using NLua;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using BarBlueprintEditor.Shared.Dtos;
-using NLua;
 
-namespace LuaToJsonConverter;
+namespace LuaToJsonConverter.Converters;
 
-public static class Converter
+public class LuaToJsonConverter(Dictionary<string, WebUnitDefinition> unitInfos) : IFileConverter
 {
-    public static void Convert(
-        string sourceFolder,
-        string targetFolder,
-        Dictionary<string, WebUnitDefinition> units)
+    public string GetSearchFilenamePattern()
     {
-        var fullSourceFolderPath = Path.GetFullPath(sourceFolder);
-        var fullTargetFolderPath = Path.GetFullPath(targetFolder);
+        return "*.lua";
+    }
 
-        foreach (var filePath in Directory.EnumerateFiles(sourceFolder, "*.lua", SearchOption.AllDirectories))
+    public string GetTargetFilenameExtension()
+    {
+        return ".json";
+    }
+
+    public void Convert(string sourceFilePath, string targetFilePath)
+    {
+        var sourceFilename = Path.GetFileNameWithoutExtension(sourceFilePath);
+        if (!unitInfos.ContainsKey(sourceFilename))
+            return;
+
+        var content = File.ReadAllText(sourceFilePath);
+        var json = ConvertLuaToJson(content);
+
+        // add webInfo
+        var jsonRootObject = JsonNode.Parse(json)!.AsObject();
+
+        // check if unit is building
+        var jsonObject = jsonRootObject[0] as JsonObject;
+        if (jsonObject == null)
+            throw new InvalidOperationException("Expected JSON root to be an object with a single property (unit name)");
+
+        if (!jsonObject.TryGetPropertyValue("yardmap", out var yardmap) || yardmap.ToString() == "f")
+            return; // skip non-buildings
+
+        var unitName = jsonObject.GetPropertyName(); // first object is name of unit
+        if (!unitInfos.TryGetValue(unitName, out var unitInfo))
         {
-            var fullFilePath = Path.GetFullPath(filePath);
-            var content = File.ReadAllText(fullFilePath);
-            string json;
-            try
-            {
-                json = ConvertLuaToJson(content);
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Error converting file '{fullFilePath}' to json: " + ex.Message, ex);
-            }
-
-            // add webInfo
-            var jsonObject = JsonNode.Parse(json)!.AsObject();
-            var unitName = jsonObject[0].GetPropertyName(); // first object is name of unit
-            if (!units.TryGetValue(unitName, out var unitInfo))
-            {
-                Console.WriteLine($"Warning: Couldn't find unit info for '{unitName}' - skipping...");
-                continue;
-            }
-            
-            jsonObject[unitName]["unitInfo"] = JsonSerializer.SerializeToNode(unitInfo);
-            var updatedJson = jsonObject.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
-            
-            var subPath = Path.GetDirectoryName(fullFilePath)!.Replace(fullSourceFolderPath, "").Trim("\\").ToString();
-            var targetFile = Path.ChangeExtension(Path.GetFileName(fullFilePath), ".json");
-            var targetFilePath = Path.Combine(fullTargetFolderPath, subPath, targetFile);
-            Directory.CreateDirectory(Path.GetDirectoryName(targetFilePath)!);
-            File.WriteAllText(targetFilePath, updatedJson);
+            Console.WriteLine($"Warning: Couldn't find unit info for '{unitName}' - skipping...");
+            return;
         }
+
+        jsonRootObject[unitName]["unitInfo"] = JsonSerializer.SerializeToNode(unitInfo);
+        var updatedJson = jsonRootObject.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        FileWalker.CreateDirectories(targetFilePath);
+        File.WriteAllText(targetFilePath, updatedJson);
     }
 
     private static string ConvertLuaToJson(string luaCode)

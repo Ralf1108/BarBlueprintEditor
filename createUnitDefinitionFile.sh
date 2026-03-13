@@ -1,48 +1,53 @@
 TEMP_FOLDER=tmp
 REPO_URL=https://github.com/beyond-all-reason/Beyond-All-Reason.git
-REP_SUBFOLDER=units
-LOCAL_FOLDER=git
+REP_UNITS_SUBFOLDER=units
+REP_UNITPICS_SUBFOLDER=unitpics
+GIT_FOLDER=git
 CONVERTER_EXE=../src/LuaToJsonConverter/bin/Debug/net10.0/LuaToJsonConverter.exe
 CONVERT_FOLDER=converted
 RESULT_ZIP=units.zip
 
-UNIT_FOLDER=$LOCAL_FOLDER/$REP_SUBFOLDER
+UNIT_FOLDER=$GIT_FOLDER/$REP_UNITS_SUBFOLDER
+UNITPICS_FOLDER=$GIT_FOLDER/$REP_UNITPICS_SUBFOLDER
+
+UNIT_FOLDER_CONVERTED=$CONVERT_FOLDER/$REP_UNITS_SUBFOLDER
+UNITPICS_FOLDER_CONVERTED=$CONVERT_FOLDER/$REP_UNITPICS_SUBFOLDER
+
 
 # create tmp environment
 echo Create temp folder...
 mkdir $TEMP_FOLDER
 cd $TEMP_FOLDER
+mkdir $CONVERT_FOLDER
+echo Done.
 echo
 
-# checkout only unit files
+# units
 echo Checkout...
-git clone --no-checkout --filter=blob:none --depth=1 --sparse $REPO_URL $LOCAL_FOLDER
-cd $LOCAL_FOLDER
+git clone --no-checkout --filter=blob:none --depth=1 --sparse $REPO_URL $GIT_FOLDER
+cd $GIT_FOLDER
 git sparse-checkout init --cone
-git sparse-checkout set $REP_SUBFOLDER
+git sparse-checkout set $REP_UNITS_SUBFOLDER
 git checkout
 cd ..
+echo Done.
 echo
 
-# remove not needed files
-echo Remove non building lua files...
-cd $LOCAL_FOLDER
-## remove non lua files
-### dry-run: find tmp_bar/units -type f ! -name "*.lua" -ls
-find $REP_SUBFOLDER -type f ! -name "*.lua" -delete
-
-## remove non building unit files -> lua files doesn't contain property "yardmap"
-### dry-run: grep -rL -- 'yardmap =' $REP_SUBFOLDER | sort
-grep -rLZ -- 'yardmap =' $REP_SUBFOLDER | xargs -0 rm -v
-
-## remove empty folders
-find $REP_SUBFOLDER/* -type d -empty -delete
-cd ..
-echo
-
-# convert lua files to json files
 echo Converting lua to json...
-$CONVERTER_EXE $LOCAL_FOLDER/$REP_SUBFOLDER $CONVERT_FOLDER
+$CONVERTER_EXE lua $UNIT_FOLDER $UNIT_FOLDER_CONVERTED
+echo Done.
+echo
+
+# unitpics
+cd $GIT_FOLDER
+git sparse-checkout init --cone
+git sparse-checkout set $REP_UNITPICS_SUBFOLDER
+git checkout
+cd ..
+
+echo Converting dds to jpg...
+$CONVERTER_EXE dds $UNITPICS_FOLDER $UNITPICS_FOLDER_CONVERTED
+echo Done.
 echo
 
 # zip unit folder
@@ -50,13 +55,13 @@ echo Zipping...
 cd $CONVERT_FOLDER
 zip -r -9 ../../$RESULT_ZIP .
 cd ..
+echo Done.
 echo
 
 # clean up
 echo Cleanup...
 cd ..
-rm -rf $TEMP_FOLDER
-
-echo
+#rm -rf $TEMP_FOLDER
 
 echo Done.
+echo

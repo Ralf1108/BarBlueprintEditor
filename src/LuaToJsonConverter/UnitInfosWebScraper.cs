@@ -4,7 +4,7 @@ using HtmlAgilityPack;
 
 namespace LuaToJsonConverter;
 
-public static class ImageUrlExtractor
+public static class UnitInfosWebScraper
 {
     public static async Task<List<WebUnitDefinition>> GetUnitDefinitions()
     {
@@ -44,7 +44,7 @@ public static class ImageUrlExtractor
 
         var doc = new HtmlDocument();
         doc.LoadHtml(html);
-        var xPathItems = "/html/body/div[3]/div[3]/div/div[4]/div[2]/div[2]/div[2]/div";
+        var xPathItems = "/html/body/div[3]/div[4]/div/div[4]/div[2]/div[2]/div[2]/div";
         var itemsNode = doc.DocumentNode.SelectSingleNode(xPathItems);
 
         var units = itemsNode.ChildNodes
