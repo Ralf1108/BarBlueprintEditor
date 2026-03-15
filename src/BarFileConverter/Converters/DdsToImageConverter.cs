@@ -1,3 +1,4 @@
+using BarBlueprintEditor.Shared.Dtos;
 using BCnEncoder.Decoder;
 using BCnEncoder.ImageSharp;
 using SixLabors.ImageSharp;
