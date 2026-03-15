@@ -3,7 +3,7 @@ REPO_URL=https://github.com/beyond-all-reason/Beyond-All-Reason.git
 REP_UNITS_SUBFOLDER=units
 REP_UNITPICS_SUBFOLDER=unitpics
 GIT_FOLDER=git
-CONVERTER_EXE=../src/LuaToJsonConverter/bin/Debug/net10.0/LuaToJsonConverter.exe
+CONVERTER_EXE=../src/BarFileConverter/bin/Debug/net10.0/BarFileConverter.exe
 CONVERT_FOLDER=converted
 RESULT_ZIP=units.zip
 
@@ -53,10 +53,13 @@ echo
 # zip unit folder
 echo Zipping...
 cd $CONVERT_FOLDER
-zip -r -9 ../../$RESULT_ZIP .
+zip -r -9 ../$RESULT_ZIP .
 cd ..
 echo Done.
 echo
+
+# copy to www
+cp $RESULT_ZIP ../src/BarBlueprintEditorWeb/BarBlueprintEditorWeb/wwwroot/resources/.
 
 # clean up
 echo Cleanup...
