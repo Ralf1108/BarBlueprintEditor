@@ -14,7 +14,7 @@ public class Blueprint
     public bool Ordered { get; set; }
 
     [JsonPropertyName("name")]
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("spacing")]
     public int Spacing { get; set; }
@@ -29,11 +29,11 @@ public class Blueprint
 public class BlueprintUnit
 {
     [JsonPropertyName("unitName")]
-    public string UnitName { get; set; }
+    public string UnitName { get; set; } = string.Empty;
 
     [JsonPropertyName("facing")]
     public int Facing { get; set; }
 
     [JsonPropertyName("position")]
-    public List<double> Position { get; set; }
+    public List<double> Position { get; set; } = new();
 }

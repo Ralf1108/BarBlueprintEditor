@@ -1,15 +1,21 @@
-﻿namespace BarBlueprintEditor.Shared.Dtos;
+﻿using System.Text.Json.Serialization;
 
-public class WebUnitDefinition(
-    string Name,
-    string ImageUrl,
-    string Title,
-    string Description,
-    string TechLevel)
+namespace BarBlueprintEditor.Shared.Dtos;
+
+public class WebUnitDefinition()
 {
-    public string Name { get; init; } = Name;
-    public string ImageUrl { get; init; } = ImageUrl;
-    public string Title { get; init; } = Title;
-    public string Description { get; init; } = Description;
-    public string TechLevel { get; init; } = TechLevel;
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("imageUrl")]
+    public string ImageUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("techLevel")]
+    public string TechLevel { get; set; } = string.Empty;
 }

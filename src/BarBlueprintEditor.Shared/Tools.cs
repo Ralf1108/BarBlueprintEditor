@@ -16,18 +16,18 @@ public static class Tools
 
     public static UnitDefinition ParseUnitDefinitionFromJson(Stream stream)
     {
-        var root = JsonSerializer.Deserialize<Dictionary<string, LuaUnit>>(stream);
-        var entry = root!.Single();
+        var entry = JsonSerializer.Deserialize<BarUnit>(stream);
+        var unitDefinition = entry.ExtraUnitInfo;
         return new UnitDefinition
         {
-            Name = entry.Key,
-            FootprintX = entry.Value.Footprintx,
-            FootprintZ = entry.Value.Footprintz,
-
-            Title = entry.Value.UnitInfo.Title,
-            Description = entry.Value.UnitInfo.Description,
-            TechLevel = entry.Value.UnitInfo.TechLevel,
-            ImageUrl = entry.Value.UnitInfo.ImageUrl
+            Name = unitDefinition.Name,
+            Title = unitDefinition.Title,
+            Description = unitDefinition.Description,
+            TechLevel = unitDefinition.TechLevel,
+            ImageUrl = unitDefinition.ImageUrl,
+            
+            FootprintX = entry.Footprintx,
+            FootprintZ = entry.Footprintz
         };
     }
 
@@ -48,14 +48,12 @@ public static class Tools
 
     public static string ReadAllTextUtf8(Stream stream)
     {
-        // 8192–16384 usually near optimal
         using var reader = new StreamReader(
             stream,
             Encoding.UTF8,
             detectEncodingFromByteOrderMarks: false,
             bufferSize: 16384,
             leaveOpen: true);
-
         return reader.ReadToEnd();
     }
 }
