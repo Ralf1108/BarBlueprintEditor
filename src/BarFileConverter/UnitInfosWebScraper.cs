@@ -66,10 +66,17 @@ public static class UnitInfosWebScraper
                 var techTopNode =
                     childNode.SelectSingleNode("a/div[not(contains(@class, 'w-condition-invisible'))]");
                 var techNode = techTopNode.SelectSingleNode("div");
-                var tech = techNode.InnerText;
+                var techLevel = techNode.InnerText;
 
-                var imageName = $"{tech} - {title} - {description}{extension}";
-                return new WebUnitDefinition(name, imageUrl, title, description, tech);
+                var imageName = $"{techLevel} - {title} - {description}{extension}";
+                return new WebUnitDefinition
+                {
+                    Name = name,
+                    ImageUrl = imageUrl,
+                    Title = title,
+                    Description = description,
+                    TechLevel = techLevel
+                };
             })
             .ToList();
         return units;

@@ -45,8 +45,9 @@ public class LuaToJsonConverter(Dictionary<string, WebUnitDefinition> unitInfos)
             return;
         }
 
-        jsonRootObject[unitName]["unitInfo"] = JsonSerializer.SerializeToNode(unitInfo);
-        var updatedJson = jsonRootObject.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        var unitObject = jsonRootObject[unitName];
+        unitObject["extraUnitInfo"] = JsonSerializer.SerializeToNode(unitInfo); // ExtraUnitInfo
+        var updatedJson = unitObject.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
         FileWalker.CreateDirectories(targetFilePath);
         File.WriteAllText(targetFilePath, updatedJson);
     }
