@@ -21,7 +21,7 @@ public static class JsonSchemaMerger
     public static string GenerateFromFolder(
         string folderPath,
         SearchOption searchOption = SearchOption.TopDirectoryOnly,
-        string schemaTitle = "CommonSchema")
+        string rootClassName = "RootClass")
     {
         var elements = Directory.GetFiles(folderPath, "*.json", searchOption)
             .Select(x =>
@@ -32,7 +32,7 @@ public static class JsonSchemaMerger
             .ToList();
 
         var schema = InferSchema(elements);
-        schema["title"] = schemaTitle;
+        schema["title"] = rootClassName;
         schema["$schema"] = "https://json-schema.org/draft/2020-12/schema";
 
         var options = new JsonSerializerOptions { WriteIndented = true };
@@ -50,7 +50,6 @@ public static class JsonSchemaMerger
         if (nonNullValues.Count == 0)
             return new JsonObject { ["type"] = "null" };
 
-        // Group by ValueKind
         var groups = nonNullValues
             .GroupBy(v => v.ValueKind)
             .ToDictionary(g => g.Key, g => g.ToList());
@@ -61,7 +60,7 @@ public static class JsonSchemaMerger
         }
 
         JsonObject rootSchema;
-        if (typeSchemas.Count == 1 || typeSchemas.Select(x => x.ToJsonString()).Distinct().Count() == 1)
+        if (typeSchemas.Count == 1 || typeSchemas.Select(x => x.ToJsonString()).Distinct().Count() == 1) // treat boolean True/False as same type
         {
             rootSchema = typeSchemas[0];
         }
@@ -69,7 +68,7 @@ public static class JsonSchemaMerger
         {
             rootSchema = new JsonObject
             {
-                ["anyOf"] = new JsonArray(typeSchemas.Select(s => s).ToArray())
+                ["anyOf"] = new JsonArray(typeSchemas.ToArray())
             };
         }
 
@@ -86,7 +85,7 @@ public static class JsonSchemaMerger
                 }
                 else if (currentTypeNode is JsonArray currentTypeArray)
                 {
-                    var newArray = new JsonArray(currentTypeArray.Select(n => n).ToArray());
+                    var newArray = new JsonArray(currentTypeArray.ToArray());
                     newArray.Add("null");
                     rootSchema["type"] = newArray;
                 }

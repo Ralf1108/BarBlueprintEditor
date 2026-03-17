@@ -41,9 +41,9 @@ public static class Program
         {
             args =
             [
-                @"web",
-                targetFilePathOption.Name,
-                @"D:\Projects\BarBlueprintEditor\tmp\webUnitDefinitions.json",
+                //@"web",
+                //targetFilePathOption.Name,
+                //@"D:\Projects\BarBlueprintEditor\tmp\webUnitDefinitions.json",
 
                 //@"dds",
                 //sourceFolderOption.Name,
@@ -67,11 +67,11 @@ public static class Program
                 //targetFilePathOption.Name,
                 //@"D:\Projects\BarBlueprintEditor\tmp\commonSchema.json",
 
-                //@"csharp",
-                //sourceFilePathOption.Name,
-                //@"D:\Projects\BarBlueprintEditor\tmp\commonSchema.json",
-                //targetFolderOption.Name,
-                //@"D:\Projects\BarBlueprintEditor\tmp\csharp.cs",
+                @"csharp",
+                sourceFilePathOption.Name,
+                @"D:\Projects\BarBlueprintEditor\tmp\commonSchema.json",
+                targetFolderOption.Name,
+                @"D:\Projects\BarBlueprintEditor\tmp\csharp.cs",
             ];
         }
 
@@ -122,7 +122,7 @@ public static class Program
             var sourceFolder = parseResult.GetValue(sourceFolderOption);
             var targetFilePath = parseResult.GetValue(targetFilePathOption);
 
-            var json = JsonSchemaMerger.GenerateFromFolder(sourceFolder, SearchOption.AllDirectories);
+            var json = JsonSchemaMerger.GenerateFromFolder(sourceFolder, SearchOption.AllDirectories, "BarUnit");
             await File.WriteAllTextAsync(targetFilePath, json);
         });
         rootCommand.Subcommands.Add(jsonSchemaCommand);
@@ -146,7 +146,7 @@ public static class Program
             var sourceFilePath= parseResult.GetValue(sourceFilePathOption);
             var targetFilePath = parseResult.GetValue(targetFilePathOption);
 
-            await JsonSchemaFileToClassConverter.Convert(sourceFilePath, targetFilePath);
+            await JsonSchemaFileToClassConverter.Convert(sourceFilePath, targetFilePath, "BarBlueprintEditor.Shared.Dtos");
         });
         rootCommand.Subcommands.Add(csharpCommand);
 

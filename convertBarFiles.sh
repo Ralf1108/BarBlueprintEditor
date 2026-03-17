@@ -53,6 +53,7 @@ echo
 echo Generate C# unit classes...
 $CONVERTER_EXE schema --source $UNIT_FOLDER_CONVERTED --target $UNIT_SCHEMA_FILE
 $CONVERTER_EXE csharp --source $UNIT_SCHEMA_FILE --target $UNIT_CS_CLASSES_FILE
+cp $UNIT_CS_CLASSES_FILE ../src/BarBlueprintEditor.Shared/Dtos/BarUnit.cs
 echo Done.
 echo
 

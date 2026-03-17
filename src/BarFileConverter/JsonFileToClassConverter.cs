@@ -10,7 +10,10 @@ namespace BarFileConverter;
 /// </summary>
 public static class JsonSchemaFileToClassConverter
 {
-    public static async Task Convert(string schemaFilePath, string outputFilePath)
+    public static async Task Convert(
+        string schemaFilePath,
+        string outputFilePath,
+        string namespaceName = "Common")
     {
         var schemaJson = await File.ReadAllTextAsync(schemaFilePath);
         var schema = await JsonSchema.FromJsonAsync(schemaJson);
@@ -21,7 +24,7 @@ public static class JsonSchemaFileToClassConverter
             JsonLibrary = CSharpJsonLibrary.SystemTextJson,
             
             ClassStyle = CSharpClassStyle.Poco,
-            Namespace = "BarBlueprintEditor.Shared.Dtos2",
+            Namespace = namespaceName,
 
             UseRequiredKeyword = true,
             GenerateOptionalPropertiesAsNullable = true,
