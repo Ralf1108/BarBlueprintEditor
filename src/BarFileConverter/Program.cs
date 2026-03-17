@@ -41,9 +41,9 @@ public static class Program
         {
             args =
             [
-                //@"web",
-                //unitDefinitionsFilePathOption.Name,
-                //@"D:\Projects\BarBlueprintEditor\tmp\webUnitDefinitions.json",
+                @"web",
+                targetFilePathOption.Name,
+                @"D:\Projects\BarBlueprintEditor\tmp\webUnitDefinitions.json",
 
                 //@"dds",
                 //sourceFolderOption.Name,
@@ -67,11 +67,11 @@ public static class Program
                 //targetFilePathOption.Name,
                 //@"D:\Projects\BarBlueprintEditor\tmp\commonSchema.json",
 
-                @"csharp",
-                sourceFilePathOption.Name,
-                @"D:\Projects\BarBlueprintEditor\tmp\commonSchema.json",
-                targetFolderOption.Name,
-                @"D:\Projects\BarBlueprintEditor\tmp\converted\csharp.cs",
+                //@"csharp",
+                //sourceFilePathOption.Name,
+                //@"D:\Projects\BarBlueprintEditor\tmp\commonSchema.json",
+                //targetFolderOption.Name,
+                //@"D:\Projects\BarBlueprintEditor\tmp\csharp.cs",
             ];
         }
 
@@ -128,13 +128,13 @@ public static class Program
         rootCommand.Subcommands.Add(jsonSchemaCommand);
 
         var webCommand = new Command("web", "Fetches unit definition data from BAR website to json file");
-        webCommand.Options.Add(unitDefinitionsFilePathOption);
+        webCommand.Options.Add(targetFilePathOption);
         webCommand.SetAction(async parseResult =>
         {
-            var unitDefinitionsFilePath = parseResult.GetValue(unitDefinitionsFilePathOption);
+            var targetFilePath = parseResult.GetValue(targetFilePathOption);
             var unitInfos = await UnitInfosWebScraper.GetUnitDefinitions();
             var json = JsonSerializer.Serialize(unitInfos, new JsonSerializerOptions { WriteIndented = true });
-            await File.WriteAllTextAsync(unitDefinitionsFilePath, json);
+            await File.WriteAllTextAsync(targetFilePath, json);
         });
         rootCommand.Subcommands.Add(webCommand);
 
