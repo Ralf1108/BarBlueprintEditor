@@ -10,6 +10,6 @@ public class UnitDefinition
     public string TechLevel { get; init; }
     public string ImageUrl { get; init; }
 
-    public float FootprintX { get; init; }
-    public float FootprintZ { get; init; }
+    public int FootprintX { get; init; }
+    public int FootprintZ { get; init; }
 }

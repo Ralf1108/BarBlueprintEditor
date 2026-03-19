@@ -4,6 +4,7 @@
 @using SkiaSharp.Views.Blazor
 @using System.Collections.ObjectModel
 @using System.Diagnostics
+@using BarBlueprintEditor.Shared
 @using BarBlueprintEditor.Shared.Models
 
 @inject IJSRuntime Js
@@ -14,6 +15,11 @@
 <h1>Adaptive Tile Grid Canvas</h1>
 
 <div class="full-page-container">
+    
+    @if (_imagesLoading)
+    {
+        <h1>Loading images...</h1>
+    }
 
     <!-- Left sidebar / controls -->
     <aside class="sidebar">
@@ -51,40 +57,36 @@
     private const int ReservedVerticalPx = 180; // space for header + buttons + margins
     private const int ReservedHorizontalPx = 40;
 
-    private ObservableCollection<Entity> Entities = new();
-    private Dictionary<string, SKBitmap> imageCache = new();
-    private List<UnitDefinition?> _unitDefinitions = new();
+    private readonly ObservableCollection<Entity> Entities = new();
+
+    private readonly Dictionary<string ,UnitDefinition> _unitDefinitions = new();
+    private readonly Dictionary<string, SKBitmap> imageCache = new();
+    private bool _imagesLoading = true;
 
     private string messageLocation = "Click a tile...";
     private string messageTile = "Click a tile...";
 
     [Inject] public HttpClient Client { get; set; } // Injected HttpClient
 
-    // protected override async Task OnInitializedAsync()
-    // {
-    //     var bytes = await Client.GetByteArrayAsync("resources/units.zip");
-    //     await using var zipStream = new MemoryStream(bytes);
-    //     _unitDefinitions = Tools.ExtractZipAsync(zipStream)
-    //         .ToBlockingEnumerable()
-    //         .Select(x =>
-    //         {
-    //             Debug.WriteLine(x.Filepath);
-    //             try
-    //             {
-    //                 var unitDefinition = Tools.ParseUnitDefinitionFromJson(x.Stream);
-    //                 unitDefinition.Folder = x.Filepath;
-    //                 return unitDefinition;
-    //             }
-    //             catch (Exception ex)
-    //             {
-    //                 Debug.WriteLine($"Skipping {x.Filepath} because of lua parse error: " + ex.Message);
-    //                 return null;
-    //             }
-    //         })
-    //         .ToList();
+    protected override async Task OnInitializedAsync()
+    {
+        var bytes = await Client.GetByteArrayAsync("resources/units.zip");
+        var entries = Tools.ReadAllZipUnitEntries(new MemoryStream(bytes))
+            .ToBlockingEnumerable()
+            .ToList();
 
-    //     await LoadSampleEntities();
-    // }
+        foreach (var entry in entries)
+        {
+            var entryInfo = entry.Info;
+            if (entry.Image != null)
+                imageCache[entryInfo.Name] = SKBitmap.Decode(entry.Image);
+
+            _unitDefinitions[entryInfo.Name] = entryInfo;
+        }
+
+        _imagesLoading = false;
+        await LoadSampleEntities();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -142,15 +144,18 @@
         {
             float x = entity.X * TileSize;
             float y = entity.Y * TileSize;
-
-            if (imageCache.TryGetValue(entity.ImageUrl, out var bmp))
-            {
-                canvas.DrawBitmap(bmp, x, y);
+            
+            var width = TileSize * entity.UnitInfoDefinition.FootprintX;
+            var height = TileSize * entity.UnitInfoDefinition.FootprintZ;
+            if (imageCache.TryGetValue(entity.Name, out var bmp))
+            {             
+                var rect = new SKRect(x, y, x + width, y + height);
+                canvas.DrawBitmap(bmp, rect);
             }
             else
             {
                 using var p = new SKPaint { Color = SKColors.IndianRed, Style = SKPaintStyle.Fill };
-                canvas.DrawRect(x, y, TileSize, TileSize, p);
+                canvas.DrawRect(x, y, width, height, p);
             }
         }
     }
@@ -165,13 +170,24 @@
 
     private async Task AddRandomEntity()
     {
+        if (_unitDefinitions.Count == 0)
+            return;
+
         var random = Random.Shared;
         var index = random.Next(_unitDefinitions.Count);
-        var unitDefinition = _unitDefinitions[index];
+        var name = _unitDefinitions.Keys.ToList()[index];
+        var unitDefinition = _unitDefinitions[_unitDefinitions.Keys.ToList()[index]];
         var x = random.Next(GridWidthInTiles);
         var y = random.Next(GridHeightInTiles);
+
         // await AddEntityAsync(new Entity { ImageUrl = "https://picsum.photos/32/32?random=1", X = 2, Y = 3 });
-        await AddEntityAsync(new Entity { ImageUrl = unitDefinition.ImageUrl, X = x, Y = y });
+        await AddEntityAsync(new Entity
+        {
+            Name = unitDefinition.Name,
+            X = x,
+            Y = y,
+            UnitInfoDefinition = unitDefinition
+        });
     }
 
     private void HandleMouseDown(MouseEventArgs e)
@@ -208,7 +224,7 @@
     private async Task AddEntityAsync(Entity entity)
     {
         Entities.Add(entity);
-        await LoadImageAsync(entity.ImageUrl);
+        // await LoadImageAsync(entity.Name);
         canvasView?.Invalidate();
     }
 
@@ -228,7 +244,7 @@
         try
         {
             SKBitmap bitmap;
-            if(url.EndsWith(".avif", StringComparison.OrdinalIgnoreCase))
+            if (url.EndsWith(".avif", StringComparison.OrdinalIgnoreCase))
             {
                 var result = await Js.InvokeAsync<JSImageData>("loadAvifAsImageData", url);
                 bitmap = new SKBitmap(result.width, result.height, SKColorType.Rgba8888, SKAlphaType.Premul);
@@ -264,9 +280,11 @@
 
     public class Entity
     {
-        public string ImageUrl { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
         public int X { get; set; } // Tile index (0-based)
         public int Y { get; set; } // Tile index (0-based)
+
+        public UnitDefinition UnitInfoDefinition { get; set; }
     }
 
     public class BrowserDimensions
